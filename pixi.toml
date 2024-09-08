@@ -1,0 +1,11 @@
+[project]
+channels = ["conda-forge"]
+description = "Add a short description here"
+name = "aisafe_front"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+streamlit = ">=1.38.0,<2"
