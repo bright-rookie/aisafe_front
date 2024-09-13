@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 import streamlit as st
+import pandas as pd
 
 # Title
 st.title("AI-SAFE: 아동학대 선별 시스템")
@@ -111,7 +112,29 @@ specific_shapes = st.radio(
 # Section 2: Medical History Recording
 st.subheader("2. 진료 영상")
 
-st.button('녹화 시작')
+# Check if 'recording' is in the session state, if not initialize it
+if 'recording' not in st.session_state:
+    st.session_state.recording = False
+
+# Toggle the recording state
+def toggle_recording():
+    st.session_state.recording = not st.session_state.recording
+
+# Record button and state indicator
+col1, col2 = st.columns([1, 4])
+
+with col1:
+    # Show red circle if recording
+    if st.session_state.recording:
+        st.markdown('<span style="color: red;">●</span>', unsafe_allow_html=True)
+    else:
+        st.write(" ")  # Write blank to keep alignment
+
+with col2:
+    # Button toggles between '녹화 시작' and '녹화 종료'
+    btn_text = "녹화 종료" if st.session_state.recording else "녹화 시작"
+    if st.button(btn_text):
+        toggle_recording()
 
 # Section 3: AI Evaluation Questions
 st.subheader("3. 문진 정보")
@@ -187,21 +210,66 @@ items_mapped = [
     map_response(inappropriate_relationship)
 ]
 
-# Display total number of bruises
-#total_bruises = sum([bruise_data.get(f'{part}_count', 0) for part in all_body_parts])
-#st.write(f"총 멍의 개수: {total_bruises}")
+# Section 4: Load EMR data
+st.subheader("4. 기존 데이터 불러오기")
 
-# Display maximum bruise lengths for each body part
-for part in all_body_parts:
-    if part in selected_body_parts:
-        st.write(f"{part}: {bruise_data.get(f'{part}_length', 0)} cm")
+# Placeholder to store EMR upload success message
+emr_uploaded = False
 
+# 1) Basic Information via CSV Upload
+st.markdown("**기본 정보**")
+basic_info_file = st.file_uploader("기본 정보를 업로드하세요 (CSV)", type=["csv"])
+
+if basic_info_file is not None:
+    try:
+        # Read CSV
+        basic_info_df = pd.read_csv(basic_info_file)
+        
+        # Assuming CSV has columns: ['age_months', 'gender', 'height_cm', 'weight_kg']
+        if set(['age_months', 'gender', 'height_cm', 'weight_kg']).issubset(basic_info_df.columns):
+            st.success("기본 정보가 성공적으로 업로드되었습니다!")
+            
+            # Display the extracted data
+            age = basic_info_df['age_months'][0]
+            gender = basic_info_df['gender'][0]
+            height = basic_info_df['height_cm'][0]
+            weight = basic_info_df['weight_kg'][0]
+            
+            st.write(f"연령: {age} 개월")
+            st.write(f"성별: {gender}")
+            st.write(f"키: {height} cm")
+            st.write(f"체중: {weight} kg")
+            
+            emr_uploaded = True
+        else:
+            st.error("CSV 파일에 필요한 기본 정보가 포함되어 있지 않습니다. (연령, 성별, 키, 체중)")
+    
+    except Exception as e:
+        st.error(f"CSV 파일을 읽는 중 오류가 발생했습니다: {e}")
+
+# 2) X-ray Report Upload
+st.markdown("**X-ray 판독문**")
+xray_report = st.file_uploader("X-ray 판독문을 업로드하세요 (TXT)", type=["txt"])
+
+# 3) Lab Data Upload
+st.markdown("**Lab 데이터**")
+lab_data = st.file_uploader("Lab 데이터를 업로드하세요 (CSV)", type=["csv"])
+
+# Submit button to confirm uploads
+if st.button("EMR 데이터 업로드 확인"):
+    if emr_uploaded and xray_report and lab_data:
+        st.success("EMR 데이터가 성공적으로 업로드되었습니다!")
+    else:
+        st.error("모든 필드를 올바르게 업로드해주세요.")
 
 # Mock result (AI decision score)
 if st.button('AI 실행'):
-    # This is a mock score, in reality, you'd connect this to your AI model
-    abuse_risk_score = 63  # Replace this with real AI output
-    st.write(f"아동학대 의심율: {abuse_risk_score}%")
+    if emr_uploaded:
+        # This is a mock score, in reality, you'd connect this to your AI model
+        abuse_risk_score = 63  # Replace this with real AI output
+        st.write(f"아동학대 의심율: {abuse_risk_score}%")
+    else:
+        st.error("EMR 데이터가 업로드되지 않았습니다. 먼저 데이터를 업로드해주세요.")
 
 # 'Run AI Detection' 버튼 눌렀을 때 '판독문 업로드 완료'등 진행 상황 문구 출력
 # 결과를 내게 만든 특성별 gradient순으로 나열, 판단의 근거 제시
