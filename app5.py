@@ -138,8 +138,6 @@ for part in selected_body_parts:
 # 12. specific_shapes (Yes -> 0, No -> 1)
 output_vector[11] = 0 if specific_shapes == 'Yes' else 1
 
-# Output the vector for inspection
-st.write("Output vector:", output_vector)
 
 # Section 2: Medical History Recording
 st.subheader("2. 진료 영상")
@@ -234,8 +232,10 @@ for part in all_body_parts:
 # Mock result (AI decision score)
 if st.button('AI 실행'):
     # This is a mock score, in reality, you'd connect this to your AI model
+    st.subheader("AI 학대 의심률")
     abuse_risk_score = 63  # Replace this with real AI output
-    st.write(f"아동학대 의심율: {abuse_risk_score}%")
-
-# 'Run AI Detection' 버튼 눌렀을 때 '판독문 업로드 완료'등 진행 상황 문구 출력
-# 결과를 내게 만든 특성별 gradient순으로 나열, 판단의 근거 제시
+    abuse_cause = ["멍", 43, "진술", 13, "검사결과", 5, "동영상", 2]# Replace this with real AI output
+    st.write(f"아동학대 의심률은 {abuse_risk_score}%입니다")
+    st.write(f"가장 가능성이 높은 근거는 {abuse_cause[0]}(으)로 {abuse_cause[1]}% 관여합니다.")
+    st.write(f"두번째 근거는 {abuse_cause[2]}(으)로 {abuse_cause[3]}% 관여합니다.")
+    st.write(f"세번째 근거는 {abuse_cause[4]}(으)로 {abuse_cause[5]}% 관여합니다.")
