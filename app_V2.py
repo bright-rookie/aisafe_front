@@ -262,22 +262,18 @@ if basic_info_file is not None:
         # Assuming CSV has columns: ['age_months', 'gender', 'height_cm', 'weight_kg']
         if set(['patient_number', 'age_months', 'sex', 'height_cm', 'weight_kg']).issubset(basic_info_df.columns):
             filtered_df = basic_info_df[basic_info_df['patient_number'] == patient_number]
+            
             if not filtered_df.empty:
                 st.success("기본 정보가 성공적으로 업로드되었습니다!")
-            
-                age = filtered_df['age_months'].values[0]
-                sex = filtered_df['sex'].values[0]
-                height = filtered_df['height_cm'].values[0]
-                weight = filtered_df['weight_kg'].values[0]
                 
-                info_vector = [age, sex, height, weight]
+                info_vector = [age_months, sex, height_cm, weight_kg]
 
                 # Display extracted data
                 st.write(f"환자 번호: {patient_number}")
-                st.write(f"연령: {age} 개월")
+                st.write(f"연령: {age_months} 개월")
                 st.write(f"성별: {sex}")
-                st.write(f"키: {height} cm")
-                st.write(f"체중: {weight} kg")
+                st.write(f"키: {height_cm} cm")
+                st.write(f"체중: {weight_kg} kg")
                 
                 info_uploaded = True
             else:
