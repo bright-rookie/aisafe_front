@@ -248,7 +248,8 @@ st.subheader("4. 기존 데이터 불러오기")
 info_uploaded = False
 xray_uploaded = False
 lab_uploaded = False
-emr_uploaded = False
+if 'emr_uploaded' not in st.session_state:
+    st.session_state.emr_uploaded = False
 
 # 1) Basic Information via CSV Upload
 st.markdown("**기본 정보**")
@@ -259,21 +260,24 @@ if basic_info_file is not None:
         # Read CSV
         basic_info_df = pd.read_csv(basic_info_file)
         
+        # Necessary columns
+        required_columns = ['patient_number', 'age_months', 'sex', 'height_cm', 'weight_kg']
+
         # Assuming CSV has columns: ['age_months', 'gender', 'height_cm', 'weight_kg']
-        if set(['patient_number', 'age_months', 'sex', 'height_cm', 'weight_kg']).issubset(basic_info_df.columns):
+        if set(required_columns).issubset(basic_info_df.columns):
             filtered_df = basic_info_df[basic_info_df['patient_number'] == patient_number]
             
             if not filtered_df.empty:
                 st.success("기본 정보가 성공적으로 업로드되었습니다!")
-                
-                info_vector = [age_months, sex, height_cm, weight_kg]
+                info_vector = filtered_df.drop(columns = ['patient_number']).values.flatten()
+
 
                 # Display extracted data
                 st.write(f"환자 번호: {patient_number}")
-                st.write(f"연령: {age_months} 개월")
-                st.write(f"성별: {sex}")
-                st.write(f"키: {height_cm} cm")
-                st.write(f"체중: {weight_kg} kg")
+                st.write(f"연령: {info_vector[0]} 개월")
+                st.write(f"성별: {info_vector[1]}")
+                st.write(f"키: {info_vector[2]} cm")
+                st.write(f"체중: {info_vector[3]} kg")
                 
                 info_uploaded = True
             else:
@@ -326,6 +330,7 @@ if xray_text:
     
     if xray_report:
         # Display the combined report
+        st.success("  X-ray 판독문이 성공적으로 업로드 되었습니다!")
         st.text_area("합쳐진 X-ray 판독문:", value=xray_report, height=300)
         xray_uploaded = True
     
@@ -352,6 +357,7 @@ if lab_data is not None:
                 # Drop the 'patient_number' column and convert the rest to a 1x20 vector
                 lab_vector = patient_data.drop(columns=['patient_number']).values.flatten()
                 lab_uploaded = True
+                st.success("Lab 데이터가 성공적으로 업로드 되었습니다!")
             else:
                 st.warning(f"환자 번호 {patient_number}에 해당하는 데이터가 없습니다.")
         else:
@@ -363,14 +369,15 @@ if lab_data is not None:
 # Submit button to confirm uploads
 if st.button("EMR 데이터 업로드 확인"):
     if info_uploaded and xray_uploaded and lab_uploaded:
+        st.session_state.emr_uploaded = True
         st.success("EMR 데이터가 성공적으로 업로드되었습니다!")
-        emr_uploaded = True
+        
     else:
         st.error("모든 필드를 올바르게 업로드해주세요.")
 
 # Mock result (AI decision score)
 if st.button('AI 실행'):
-    if emr_uploaded:
+    if st.session_state.emr_uploaded:
         # This is a mock score, in reality, you'd connect this to your AI model
         with st.spinner('AI 분석 중입니다...'):
             progress = st.progress(0)
