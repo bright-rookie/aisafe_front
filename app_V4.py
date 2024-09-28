@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import time
 import re
+import nltk
+nltk.download('punkt_tab')
 
 # Title
 st.title("AI-SAFE: 아동학대 선별 시스템")
@@ -152,7 +154,7 @@ def toggle_recording():
     st.session_state.recording = not st.session_state.recording
 
 # Record button and state indicator
-col1, col2 = st.columns([1, 4])
+col1, col2 = st.columns([1, 80])
 
 with col1:
     # Show red circle if recording
@@ -291,7 +293,7 @@ if basic_info_file is not None:
 # Function to process uploaded files
 def process_xray_text(files, input_patient_number):
     body_parts = ['skull', 'arms', 'legs', 'torso', 'pelvis']
-    xray_data = {part: 'NULL' for part in body_parts}  # Default to 'NULL' for all parts
+    xray_data = {part: 'Not available' for part in body_parts}  # Default to 'NULL' for all parts
     
     for file in files:
         # Extract patient number and part name from the filename
@@ -308,7 +310,7 @@ def process_xray_text(files, input_patient_number):
         if part_name in body_parts:
             # Read file content
             file_content = file.read().decode("utf-8")
-            xray_data[part_name] = file_content if file_content.strip() else 'NULL'
+            xray_data[part_name] = file_content if file_content.strip() else 'Not available'
         else:
             st.error(f"파일 {filename}에 부위 이름이 잘못되었습니다: {part_name}")
             return None
@@ -319,6 +321,8 @@ def process_xray_text(files, input_patient_number):
         xray_report_text += f"{part}:\n{xray_data[part]}\n"
 
     return xray_report_text
+
+xray_report = " "
 
 # X-ray reports upload
 st.markdown("**X-ray 판독문**")
@@ -336,9 +340,8 @@ if xray_text:
     
 
 def get_fracture_count(text):
-    if text == "NULL":
+    if text is None or text == "Not available":
         return 0
-
 
     # Check for explicit no fracture statements
     no_fracture_patterns = ["no evidence of", "no fracture"]
@@ -359,7 +362,7 @@ def get_fracture_count(text):
             return 1
 
 def check_specific_fracture(text, fracture_type):
-    if "NULL" in text:
+    if "Not available" in text:
         return 0
     if re.search(fracture_type, text, re.IGNORECASE):
         return 1
@@ -383,6 +386,12 @@ def parse_report(text):
 
     return report_sections
 
+nltk.download('punkt')
+
+def split_sentences(text):
+    """Splits the section text into individual sentences."""
+    return nltk.sent_tokenize(text)
+
 def generate_xray_vector(text):
     report = parse_report(text)
 
@@ -395,31 +404,47 @@ def generate_xray_vector(text):
     spiral_fx = 0
     metaphyseal_fx = 0
 
+    skull = get_fracture_count(report.get("skull", ""))
+    if skull is None :
+        skull = 0
+    ribs = get_fracture_count(report.get("torso", ""))
+    if ribs is None :
+        ribs = 0
+    pelvis = get_fracture_count(report.get("pelvis", ""))
+    if pelvis is None :
+        pelvis = 0
 
-    skull = get_fracture_count(report.get("skull", "NULL"))
-    ribs = get_fracture_count(report.get("torso", "NULL"))
-    pelvis = get_fracture_count(report.get("pelvis", "NULL"))
+    # Arms section sentence-level checking
+    arms_sentences = split_sentences(report.get("arms", ""))
+    for sentence in arms_sentences:
+        if "radius" in sentence.lower() or "ulna" in sentence.lower():
+            radius_ulna = get_fracture_count(sentence)
+        if "humerus" in sentence.lower():
+            humerus = get_fracture_count(sentence)
+    
+    # Legs section sentence-level checking
+    legs_sentences = split_sentences(report.get("legs", ""))
+    for sentence in legs_sentences:
+        if "tibia" in sentence.lower() or "fibula" in sentence.lower():
+            tibia_fibula = get_fracture_count(sentence)
+        if "femur" in sentence.lower():
+            femur = get_fracture_count(sentence)
 
-    if "radius" in report.get("arms", "").lower() or "ulna" in report.get("arms", "").lower():
-        radius_ulna = get_fracture_count(report.get("arms", ""))
-    if "humerus" in report.get("arms", "").lower():
-        humerus = get_fracture_count(report.get("arms", ""))
     
-    # Separate femur and tibia_fibula based on their specific mentions
-    if "tibia" in report.get("legs", "").lower() or "fibula" in report.get("legs", "").lower():
-        tibia_fibula = get_fracture_count(report.get("legs", ""))
-    if "femur" in report.get("legs", "").lower() :
-        femur = get_fracture_count(report.get("legs", ""))
-    
-    # Check for specific fracture types
-    spiral_fx = check_specific_fracture(report.get("arms", "") + report.get("legs", ""), "spiral fracture")
-    metaphyseal_fx = check_specific_fracture(report.get("arms", "") + report.get("legs", ""), "metaphyseal fracture")
-    
+  # Check for specific fracture types in both arms and legs sections
+    arms_legs_text = report.get("arms", "") + " " + report.get("legs", "")
+    spiral_fx = check_specific_fracture(arms_legs_text, "spiral fracture")
+    metaphyseal_fx = check_specific_fracture(arms_legs_text, "metaphyseal fracture")
+
     return [skull, ribs, humerus, radius_ulna, femur, tibia_fibula, pelvis, spiral_fx, metaphyseal_fx]
 
 # Generate x-ray vectors for each patient
-xray_vectors = generate_xray_vector(xray_report)
-st.text_area("X-ray vector를 확인하세요", value=xray_vectors, height=300)
+if xray_report:
+    # Generate x-ray vectors for each patient
+    xray_vectors = generate_xray_vector(xray_report)
+    st.text_area("X-ray vector를 확인하세요", value=xray_vectors, height=30)
+else:
+    st.error("X-ray report is not available!")
 
 
 
