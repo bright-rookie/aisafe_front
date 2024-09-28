@@ -5,6 +5,8 @@ import numpy as np
 import time
 import re
 import os
+import nltk
+nltk.download('punkt_tab')
 
 # Title
 st.title("AI-SAFE: 아동학대 선별 시스템")
@@ -16,7 +18,7 @@ st.subheader("Patient Information")
 patient_number = st.number_input("환자 번호를 입력해주세요:", value = 1, min_value = 1 , step=1)
 
 # Vectore creation
-bruise_vector = [0] * 11  # Initialize a 1x12 vector with zeros
+bruise_vector = [0] * 11  # Initialize a 1x11 vector with zeros
 
 
 # Create two columns: one for the input form and one for the image
@@ -35,7 +37,7 @@ with input_col:
 
     # Create a row with the multiselect and the 'Select All' button on the same line
     cols = st.columns([3, 1])  # First column wider for the multiselect, second for the button
-
+    
     # Place the 'Select All' button in the second column
     with cols[1]:
         if st.button('모두 선택'):
@@ -44,15 +46,18 @@ with input_col:
 
     # Place the multiselect in the first column
     with cols[0]:
-        selected_body_parts = st.multiselect(
-            "멍이 있는 부위들을 골라주세요:",
-            all_body_parts,
-            default=st.session_state.selected_body_parts
+        selected_body_parts = st.multiselect("멍이 있는 부위들을 골라주세요",
+        all_body_parts,
+        default=st.session_state.selected_body_parts
         )
+
+
 
     # Update the session state to store the selected body parts
     st.session_state.selected_body_parts = selected_body_parts
 
+    st.markdown("> 멍의 개수가 10개 이상인 경우 10을 기입해주세요.  \n > 멍 중 길이가 가장 긴 장반경을 기입해주세요.")
+    
     # Dictionary to store user inputs for each body part
     bruise_data = {}
 
@@ -72,15 +77,15 @@ with image_col:
     # Dictionary with approximate coordinates for each body part on the pictogram
     body_part_positions = {
         "머리": (300, 50),
-        "팔": (110, 450),
-        "다리": (300, 850),
-        "몸통": (450, 550),
-        "엉덩이": (700, 700)
+        "팔": (70, 470),
+        "다리": (300, 800),
+        "몸통": (450, 530),
+        "엉덩이": (130, 650)
     }
 
     # Font settings for displaying bruise info (adjust path to your system font if needed)
     try:
-        font = ImageFont.truetype("NanumGothic.ttf", 40)
+        font = ImageFont.truetype("NanumGothic.ttf", 30)
     except IOError:
         font = ImageFont.load_default()
 
@@ -106,14 +111,17 @@ with image_col:
                     (bbox[0] - padding, bbox[1] - padding),  # Top left corner
                     (bbox[2] + padding, bbox[3] + padding)  # Bottom right corner
                 ],
-                fill="yellow"  # Background color
+                fill="lemonchiffon"  # Background color
             )
             
             # Draw the text on top of the background
-            draw.text(position, text, fill="red", font=font)
+            draw.text(position, text, fill="crimson", font=font)
+    
+    for _ in range(4):
+        st.write("")
 
     # Display the image with a 2x larger width and height
-    st.image(image, caption="", width=600)  # Adjust the width as needed (for 2x, increase it proportionally)
+    st.image(image, caption="", width=400)  # Adjust the width as needed (for 2x, increase it proportionally)
 
 
 
@@ -139,7 +147,7 @@ for part in selected_body_parts:
     bruise_vector[length_index] = bruise_data[f'{part}_length']  # Set the bruise length
 
 # 12. specific_shapes (Yes -> 0, No -> 1)
-bruise_vector[10] = 0 if specific_shapes == 'Yes' else 1
+bruise_vector[10] = 0 if specific_shapes == '예' else 1
 
 # Section 2: Medical History Recording
 st.subheader("2. 진료 영상")
@@ -153,7 +161,16 @@ def toggle_recording():
     st.session_state.recording = not st.session_state.recording
 
 # Record button and state indicator
-col1, col2 = st.columns([1, 4])
+col1, col2 = st.columns([1, 100])
+
+with col2:
+    # Button toggles between '녹화 시작' and '녹화 종료'
+    btn_text = "녹화 종료" if st.session_state.recording else "녹화 시작"
+    if st.button(btn_text):
+        toggle_recording()  # Toggle recording state
+
+        # Show updated state immediately
+        st.rerun()  # Call rerun to update UI
 
 with col1:
     # Show red circle if recording
@@ -162,11 +179,7 @@ with col1:
     else:
         st.write(" ")  # Write blank to keep alignment
 
-with col2:
-    # Button toggles between '녹화 시작' and '녹화 종료'
-    btn_text = "녹화 종료" if st.session_state.recording else "녹화 시작"
-    if st.button(btn_text):
-        toggle_recording()
+
 
 # Section 3: AI Evaluation Questions
 st.subheader("3. 문진 정보")
@@ -235,9 +248,9 @@ for _ in range(5):  # Loop through 4 times, each loop for one row with two quest
 # Function to map responses
 def map_response(response):
     if response == '예':
-        return 1
-    elif response == '아니오':
         return 0
+    elif response == '아니오':
+        return 1
     elif response == '유보':
         return None
     elif response == '부모':
@@ -290,7 +303,6 @@ with col1:
 
             # 필수 컬럼들이 존재하는지 확인
             if set(required_columns).issubset(basic_info_df.columns):
-                patient_number = 1  # 예를 들어 첫 번째 환자만 필터링한다고 가정
                 filtered_df = basic_info_df[basic_info_df['patient_number'] == patient_number]
                 
                 if not filtered_df.empty:
@@ -441,7 +453,7 @@ with col2:
 
 def process_xray_text(files, input_patient_number):
     body_parts = ['skull', 'arms', 'legs', 'torso', 'pelvis']
-    xray_data = {part: 'NULL' for part in body_parts}  # Default to 'NULL' for all parts
+    xray_data = {part: 'Not available' for part in body_parts}  # Default to 'Not available' for all parts
     
     for file in files:
         # Extract patient number and part name from the filename
@@ -458,7 +470,7 @@ def process_xray_text(files, input_patient_number):
         if part_name in body_parts:
             # Read file content
             file_content = file.read().decode("utf-8")
-            xray_data[part_name] = file_content if file_content.strip() else 'NULL'
+            xray_data[part_name] = file_content if file_content.strip() else 'Not available'
         else:
             st.error(f"파일 {filename}에 부위 이름이 잘못되었습니다: {part_name}")
             return None
@@ -471,11 +483,11 @@ def process_xray_text(files, input_patient_number):
     return xray_report_text
 
 def get_fracture_count(text):
-    if text == "NULL":
+    if text is None or text == "Not available":
         return 0
 
     # Check for explicit no fracture statements
-    no_fracture_patterns = ["no evidence of", "no fracture"]
+    no_fracture_patterns = ["no evidence of", "no fracture", "no fx"]
     for pattern in no_fracture_patterns:
         if re.search(pattern, text, re.IGNORECASE):
             return 0
@@ -487,14 +499,14 @@ def get_fracture_count(text):
             return 2
 
     # Check for single fractures
-    single_pattern = ["fracture"]
+    single_pattern = ["fracture", "fx"]
     for pattern in single_pattern:
         if re.search(pattern, text, re.IGNORECASE):
             return 1
 
 
 def check_specific_fracture(text, fracture_type):
-    if text == "NULL":
+    if text == "Not available":
         return 0
     if re.search(fracture_type, text, re.IGNORECASE):
         return 1
@@ -522,6 +534,12 @@ def parse_report(text):
 
     return report_sections
 
+nltk.download('punkt')
+
+def split_sentences(text):
+    """Splits the section text into individual sentences."""
+    return nltk.sent_tokenize(text)
+
 def generate_xray_vector(text):
     report = parse_report(text)
 
@@ -534,32 +552,45 @@ def generate_xray_vector(text):
     spiral_fx = 0
     metaphyseal_fx = 0
 
-    skull = get_fracture_count(report.get("skull", "NULL"))
-    ribs = get_fracture_count(report.get("torso", "NULL"))
-    pelvis = get_fracture_count(report.get("pelvis", "NULL"))
+    skull = get_fracture_count(report.get("skull", ""))
+    if skull is None :
+        skull = 0
+    ribs = get_fracture_count(report.get("torso", ""))
+    if ribs is None :
+        ribs = 0
+    pelvis = get_fracture_count(report.get("pelvis", ""))
+    if pelvis is None :
+        pelvis = 0
 
-    if "radius" in report.get("arms", "").lower() or "ulna" in report.get("arms", "").lower():
-        radius_ulna = get_fracture_count(report.get("arms", ""))
-    if "humerus" in report.get("arms", "").lower():
-        humerus = get_fracture_count(report.get("arms", ""))
+    # Arms section sentence-level checking
+    arms_sentences = split_sentences(report.get("arms", ""))
+    for sentence in arms_sentences:
+        if "radius" in sentence.lower() or "ulna" in sentence.lower():
+            radius_ulna = get_fracture_count(sentence)
+        if "humerus" in sentence.lower():
+            humerus = get_fracture_count(sentence)
     
-    # Separate femur and tibia_fibula based on their specific mentions
-    if "tibia" in report.get("legs", "").lower() or "fibula" in report.get("legs", "").lower():
-        tibia_fibula = get_fracture_count(report.get("legs", ""))
-    if "femur" in report.get("legs", "").lower():
-        femur = get_fracture_count(report.get("legs", ""))
+    # Legs section sentence-level checking
+    legs_sentences = split_sentences(report.get("legs", ""))
+    for sentence in legs_sentences:
+        if "tibia" in sentence.lower() or "fibula" in sentence.lower():
+            tibia_fibula = get_fracture_count(sentence)
+        if "femur" in sentence.lower():
+            femur = get_fracture_count(sentence)
+
     
-    # Check for specific fracture types
-    spiral_fx = check_specific_fracture(report.get("arms", "") + report.get("legs", ""), "spiral fracture")
-    metaphyseal_fx = check_specific_fracture(report.get("arms", "") + report.get("legs", ""), "metaphyseal fracture")
-    
+  # Check for specific fracture types in both arms and legs sections
+    arms_legs_text = report.get("arms", "") + " " + report.get("legs", "")
+    spiral_fx = check_specific_fracture(arms_legs_text, "spiral fracture")
+    metaphyseal_fx = check_specific_fracture(arms_legs_text, "metaphyseal fracture")
+
     return [skull, ribs, humerus, radius_ulna, femur, tibia_fibula, pelvis, spiral_fx, metaphyseal_fx]
 
 # X-ray reports upload
 st.markdown("**X-ray 판독문**")
 xray_text = st.file_uploader("X-ray 판독문을 업로드하세요 (TXT)", type=["txt"], accept_multiple_files=True)
 
-xray_report = None  # xray_report 변수를 미리 None으로 정의
+xray_report = None  # xray_report 변수를 미리 None 으로 정의
 
 if xray_text:
     # Process the uploaded reports
@@ -568,7 +599,7 @@ if xray_text:
     if xray_report:
         # Display the combined report
         st.success("X-ray 판독문이 성공적으로 업로드 되었습니다!")
-        st.text_area("합쳐진 X-ray 판독문:", value=xray_report, height=100)
+        st.text_area("합쳐진 X-ray 판독문:", value=xray_report, height=250)
         xray_uploaded = True
     else:
         st.error("X-ray 판독문 처리에 실패했습니다.")
