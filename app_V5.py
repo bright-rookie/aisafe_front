@@ -65,9 +65,9 @@ with input_col:
     for part in selected_body_parts:
         cols = st.columns(2)
         with cols[0]:
-            bruise_data[f'{part}_count'] = st.number_input(f'{part}: 멍의 개수', min_value=0, max_value=10, value=0, key=f'{part}_count')
+            bruise_data[f'{part}_count'] = st.number_input(f'{part}: 멍의 개수', min_value=1, max_value=10, value=1, key=f'{part}_count')
         with cols[1]:
-            bruise_data[f'{part}_length'] = st.number_input(f'{part}: 멍의 장반경(cm)', min_value=0.0, max_value=50.0, value=0.0, key=f'{part}_length')
+            bruise_data[f'{part}_length'] = round(st.number_input(f'{part}: 멍의 장반경(cm)', min_value=0.0, max_value=50.0, value=0.0, format="%.2f", key=f'{part}_length'), 2)
 
 with image_col:
     # Load the human body pictogram
@@ -79,7 +79,7 @@ with image_col:
         "머리": (300, 50),
         "팔": (70, 470),
         "다리": (300, 800),
-        "몸통": (450, 530),
+        "몸통": (410, 530),
         "엉덩이": (130, 650)
     }
 
@@ -197,7 +197,7 @@ for _ in range(5):  # Loop through 4 times, each loop for one row with two quest
             )
         elif _ == 1:
             consciousness_state = st.radio(
-                '환자가 의식이 있는 상태인가요?',
+                '환자가 의식이 정상인가요?',
                 ('예', '아니오')
             )            
         elif _ == 2:
@@ -307,15 +307,13 @@ with col1:
                 
                 if not filtered_df.empty:
                     st.success("기본 정보가 성공적으로 업로드되었습니다!")
-                    info_vector = filtered_df.drop(columns=['patient_number']).values.flatten()
+                    info_vector_pre = filtered_df.drop(columns=['patient_number']).values.flatten()
 
                     # 환자의 기본 정보 추출
-                    patient_age = info_vector[0]
-                    patient_sex = int(info_vector[1])
-                    if patient_sex == 0: patient_sex1 = "남"
-                    elif patient_sex == 1: patient_sex2 = "여"
-                    patient_height = info_vector[2]
-                    patient_weight = info_vector[3]
+                    patient_age = info_vector_pre[0]
+                    patient_sex = int(info_vector_pre[1])
+                    patient_height = info_vector_pre[2]
+                    patient_weight = info_vector_pre[3]
                     
                     info_uploaded = True
                 else:
@@ -369,7 +367,7 @@ with col1:
                 
                 # 선형 보간 계산
                 percentile = lower_percentile + ((value - lower_bound) / (upper_bound - lower_bound)) * (upper_percentile - lower_percentile)
-                return f"{percentile:.2f}th"
+                return round(percentile, 2)
 
         return None
 
@@ -411,8 +409,11 @@ with col1:
             st.write(f"환자 번호: {patient_number}")
             st.write(f"연령: {patient_age} 개월")
             st.write(f"성별: {'남' if patient_sex == 0 else '여'}")
-            st.write(f"키: {patient_height} cm ({height_percentile})")
-            st.write(f"체중: {patient_weight} kg ({weight_percentile})")
+            st.write(f"키: {patient_height} cm ({height_percentile}th)")
+            st.write(f"체중: {patient_weight} kg ({weight_percentile}th)")
+
+            info_vector = [patient_age, patient_sex, height_percentile, weight_percentile]
+
 
 # 2) Lab Data Upload
 with col2:
@@ -452,7 +453,7 @@ with col2:
 # Function to process uploaded files
 
 def process_xray_text(files, input_patient_number):
-    body_parts = ['skull', 'arms', 'legs', 'torso', 'pelvis']
+    body_parts = ['skull', 'torso', 'arms', 'legs','pelvis']
     xray_data = {part: 'Not available' for part in body_parts}  # Default to 'Not available' for all parts
     
     for file in files:
@@ -483,9 +484,9 @@ def process_xray_text(files, input_patient_number):
     return xray_report_text
 
 def get_fracture_count(text):
-    if text is None or text == "Not available":
-        return 0
-
+    if text is "" or text == "Not available":
+        return None
+    
     # Check for explicit no fracture statements
     no_fracture_patterns = ["no evidence of", "no fracture", "no fx"]
     for pattern in no_fracture_patterns:
@@ -493,7 +494,7 @@ def get_fracture_count(text):
             return 0
 
     # Check for multiple fractures
-    multiple_patterns = ["multiple", "various", "several", "healing", "healed", "callus", "prior"]
+    multiple_patterns = ["multiple", "various", "several", "healing", "healed", "callus", "prior", "fractures"]
     for pattern in multiple_patterns:
         if re.search(pattern, text, re.IGNORECASE):
             return 2
@@ -506,11 +507,11 @@ def get_fracture_count(text):
 
 
 def check_specific_fracture(text, fracture_type):
-    if text == "Not available":
-        return 0
-    if re.search(fracture_type, text, re.IGNORECASE):
+    if text is " " or text == "Not available Not available":
+        return None
+    elif re.search(fracture_type, text, re.IGNORECASE):
         return 1
-    return 0
+    else : return 0
 
 
 def parse_report(text):
@@ -543,24 +544,23 @@ def split_sentences(text):
 def generate_xray_vector(text):
     report = parse_report(text)
 
-    skull = 0
-    ribs = 0
-    radius_ulna = 0
-    humerus = 0
-    tibia_fibula = 0
-    femur = 0
-    spiral_fx = 0
-    metaphyseal_fx = 0
+    skull = None
+    ribs = None
+    radius_ulna = None
+    humerus = None
+    tibia_fibula = None
+    femur = None
+    pelvis = None
+    spiral_fx = None
+    metaphyseal_fx = None
 
     skull = get_fracture_count(report.get("skull", ""))
-    if skull is None :
-        skull = 0
     ribs = get_fracture_count(report.get("torso", ""))
-    if ribs is None :
-        ribs = 0
+    radius_ulna = get_fracture_count(report.get("arms", ""))
+    humerus = get_fracture_count(report.get("arms", ""))
+    tibia_fibula = get_fracture_count(report.get("legs", ""))
+    femur = get_fracture_count(report.get("legs", ""))
     pelvis = get_fracture_count(report.get("pelvis", ""))
-    if pelvis is None :
-        pelvis = 0
 
     # Arms section sentence-level checking
     arms_sentences = split_sentences(report.get("arms", ""))
@@ -581,8 +581,8 @@ def generate_xray_vector(text):
     
   # Check for specific fracture types in both arms and legs sections
     arms_legs_text = report.get("arms", "") + " " + report.get("legs", "")
-    spiral_fx = check_specific_fracture(arms_legs_text, "spiral fracture")
-    metaphyseal_fx = check_specific_fracture(arms_legs_text, "metaphyseal fracture")
+    spiral_fx = check_specific_fracture(arms_legs_text, "spiral")
+    metaphyseal_fx = check_specific_fracture(arms_legs_text, "metaphyseal")
 
     return [skull, ribs, humerus, radius_ulna, femur, tibia_fibula, pelvis, spiral_fx, metaphyseal_fx]
 
@@ -596,18 +596,19 @@ if xray_text:
     # Process the uploaded reports
     xray_report = process_xray_text(xray_text, patient_number)
     
-    if xray_report:
-        # Display the combined report
+# X-ray vector 생성은 xray_report가 None이 아니고 문자열일 때만 실행
+# Display the combined report
+    if xray_report and isinstance(xray_report, str):
         st.success("X-ray 판독문이 성공적으로 업로드 되었습니다!")
         st.text_area("합쳐진 X-ray 판독문:", value=xray_report, height=250)
+        xray_vector = generate_xray_vector(xray_report)
         xray_uploaded = True
     else:
-        st.error("X-ray 판독문 처리에 실패했습니다.")
+        st.error("X-ray 판독문 처리에 실패했습니다.")       
 
-# X-ray vector 생성은 xray_report가 None이 아니고 문자열일 때만 실행
-if xray_report and isinstance(xray_report, str):
-    xray_vectors = generate_xray_vector(xray_report)
-    st.text_area("X-ray vector를 확인하세요", value=xray_vectors, height=100)
+if st.button("X-ray 없음"):
+    xray_vector = generate_xray_vector("")
+    xray_uploaded = True
 
 # Submit button to confirm uploads
 if st.button("EMR 데이터 업로드 확인"):
@@ -637,5 +638,6 @@ if st.button('AI 실행'):
     else:
         st.error("EMR 업로드 확인을 먼저 수행해주십시오.")
 
+st.write (bruise_vector, response_vector, info_vector, lab_vector, xray_vector)
 # 'Run AI Detection' 버튼 눌렀을 때 '판독문 업로드 완료'등 진행 상황 문구 출력
 # 결과를 내게 만든 특성별 gradient순으로 나열, 판단의 근거 제시
