@@ -9,3 +9,11 @@ version = "0.1.0"
 
 [dependencies]
 streamlit = ">=1.38.0,<2"
+pandas = ">=2.2.3,<3"
+pillow = ">=10.4.0,<11"
+
+[pypi-dependencies]
+nltk = ">=3.9.1, <4"
+mypy = ">=1.11.2, <2"
+ruff = ">=0.6.8, <0.7"
+black = ">=24.8.0, <25"
