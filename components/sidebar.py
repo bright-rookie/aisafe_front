@@ -4,6 +4,12 @@ import streamlit as st
 def sidebar(bruise_vector, info_vector, patient_number):
     # Add a sidebar for the table of contents and data preview
     with st.sidebar:
+        st.header("Navigation")
+        st.markdown("[1. Bruising](#28468c68)")
+        st.markdown("[2. Audio or Video](#56764aab)")
+        st.markdown("[3. Patient History](#b327ee4d)")
+        st.markdown("[4. EMR Data](##a7bfd3ff)")
+        
         st.header("Data Review")
         st.markdown("### Basic Information")
         sex_to_str = ["남", "여"]
