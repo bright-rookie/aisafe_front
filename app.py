@@ -6,6 +6,16 @@ import pandas as pd
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 
+import cv2
+import tempfile
+import os
+import moviepy.editor as mp
+import base64
+import pyaudio
+import wave
+import threading
+
+
 # Title
 st.title("AI-SAFE: 아동학대 선별 시스템")
 
@@ -56,8 +66,7 @@ with input_col:
     # Update the session state to store the selected body parts
     st.session_state.selected_body_parts = selected_body_parts
 
-    st.markdown(
-        "> 멍의 개수가 10개 이상인 경우 10을 기입해주세요.  \n > 멍 중 길이가 가장 긴 장반경을 기입해주세요."
+    st.info("멍의 개수가 10개 이상인 경우 10을 기입해주세요.  \n 멍 중 길이가 가장 긴 장반경을 기입해주세요."
     )
 
     # Dictionary to store user inputs for each body part
@@ -172,34 +181,128 @@ bruise_vector[10] = 0 if specific_shapes == "예" else 1
 # Section 2: Medical History Recording
 st.subheader("2. 진료 영상")
 
-# Check if 'recording' is in the session state, if not initialize it
-if "recording" not in st.session_state:
-    st.session_state.recording = False
+# Define button states
+video_recorded = False
+video_uploaded = False
+audio_uploaded = False
+recorded_file_path = None
+
+def record_audio(output_file, frames, stop_event):
+    chunk = 1024
+    sample_format = pyaudio.paInt16
+    channels = 1
+    rate = 44100
+    p = pyaudio.PyAudio()
+
+    stream = p.open(format=sample_format,
+                    channels=channels,
+                    rate=rate,
+                    frames_per_buffer=chunk,
+                    input=True)
+
+    while not stop_event.is_set():
+        data = stream.read(chunk)
+        frames.append(data)
+
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+    wf = wave.open(output_file, 'wb')
+    wf.setnchannels(channels)
+    wf.setsampwidth(p.get_sample_size(sample_format))
+    wf.setframerate(rate)
+    wf.writeframes(b''.join(frames))
+    wf.close()
 
 
-# Toggle the recording state
-def toggle_recording():
-    st.session_state.recording = not st.session_state.recording
+st.markdown("녹화를 진행하거나 이미 촬영한 영상이나 음성 파일을 업로드해주세요.")
+
+# Button 1: Start Video Recording using OpenCV
+if st.button("녹화 시작"):
+    # Using OpenCV to start webcam recording
+    st.info("녹화는 1분 동안 진행되며, 중간에 중단을 원할시 Q 키를 눌러주세요")
+    cap = cv2.VideoCapture(0)
+    fps = cap.get(cv2.CAP_PROP_FPS) if cap.get(cv2.CAP_PROP_FPS) > 0 else 20.0
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    temp_video_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+    temp_audio_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+    out = cv2.VideoWriter(temp_video_file.name, fourcc, fps, (int(cap.get(3)), int(cap.get(4))))
+
+    # Prepare for audio recording
+    audio_frames = []
+    stop_event = threading.Event()
+    audio_thread = threading.Thread(target=record_audio, args=(temp_audio_file.name, audio_frames, stop_event))
+
+    # Start both audio and video recording simultaneously
+    audio_thread.start()
+    start_time = time.time()
+    while (time.time() - start_time) < 60:
+        ret, frame = cap.read()
+        if ret:
+            out.write(frame)
+            cv2.imshow('Recording...', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        else:
+            break
+
+    # Stop video and audio recording
+    cap.release()
+    out.release()
+    stop_event.set()
+    audio_thread.join()
+    cv2.destroyAllWindows()
+
+    # Combine audio and video using moviepy
+    video = mp.VideoFileClip(temp_video_file.name)
+    audio = mp.AudioFileClip(temp_audio_file.name)
+    final_video = video.set_audio(audio)
+    recorded_file_path = temp_video_file.name.replace('.mp4', '_final.mp4')
+    final_video.write_videofile(recorded_file_path, codec='libx264', audio_codec='aac', fps=fps)
+
+    video_recorded = True
+    st.success("Video recording saved successfully.")
+    st.video(recorded_file_path)
+
+    with open(recorded_file_path, "rb") as file:
+        btn = st.download_button(
+            label="Download Recorded Video",
+            data=file,
+            file_name="recorded_video.mp4",
+            mime="video/mp4"
+        )
+
+# Button 2: Upload Video File
+uploaded_video = st.file_uploader("비디오 파일 업로드 (MP4)", type=['mp4'])
+if uploaded_video:
+    video_uploaded = True
+    st.success("비디오 파일이 성공적으로 업로드 되었습니다.")
+
+    # Save uploaded video to a temporary file
+    temp_video_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+    temp_video_file.write(uploaded_video.read())
+    temp_video_file.close()
+
+    # Use moviepy to separate video with and without audio
+    video = mp.VideoFileClip(temp_video_file.name)
+    video_with_audio = video
+    video_without_audio = video.without_audio()
 
 
-# Record button and state indicator
-col1, col2 = st.columns([1, 100])
+# Button 3: Upload Audio File
+uploaded_audio = st.file_uploader("오디오 파일 업로드 (MP3, M4A)", type=['mp3', 'm4a'])
+if uploaded_audio:
+    audio_uploaded = True
+    st.success("오디오 파일이 성공적으로 업로드 되었습니다.")
 
-with col2:
-    # Button toggles between '녹화 시작' and '녹화 종료'
-    btn_text = "녹화 종료" if st.session_state.recording else "녹화 시작"
-    if st.button(btn_text):
-        toggle_recording()  # Toggle recording state
+# Proceed to next step
+if video_recorded or video_uploaded or audio_uploaded:
+    st.info("문진을 진행해주세요")
+else:
+    st.warning("녹화를 진행하거나 비디오 또는 오디오 파일을 업로드해주세요.")
 
-        # Show updated state immediately
-        st.rerun()  # Call rerun to update UI
 
-with col1:
-    # Show red circle if recording
-    if st.session_state.recording:
-        st.markdown('<span style="color: red;">●</span>', unsafe_allow_html=True)
-    else:
-        st.write(" ")  # Write blank to keep alignment
 
 
 # Section 3: AI Evaluation Questions
