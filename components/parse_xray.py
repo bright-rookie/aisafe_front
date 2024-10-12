@@ -44,7 +44,7 @@ def process_xray_text(files, input_patient_number):
 def get_fracture_count(text):
     """Get fracture count from X-ray report text."""
     if text == "" or text == "Not available":
-        return None
+        return 0
 
     no_fracture_patterns = ["no evidence of", "no fracture", "no fx"]
     for pattern in no_fracture_patterns:
@@ -74,7 +74,7 @@ def get_fracture_count(text):
 def check_specific_fracture(text, fracture_type):
     """Check for specific fracture types in X-ray report text."""
     if text == " " or text == "Not available Not available":
-        return None
+        return 0
     elif re.search(fracture_type, text, re.IGNORECASE):
         return 1
     else:
@@ -111,7 +111,7 @@ def generate_xray_vector(text):
     pelvis = get_fracture_count(report.get("pelvis", ""))
 
     arms_sentences = split_sentences(report.get("arms", ""))
-    radius_ulna = humerus = None
+    radius_ulna = humerus = 0
     for sentence in arms_sentences:
         if "radius" in sentence.lower() or "ulna" in sentence.lower():
             radius_ulna = get_fracture_count(sentence)
@@ -119,7 +119,7 @@ def generate_xray_vector(text):
             humerus = get_fracture_count(sentence)
 
     legs_sentences = split_sentences(report.get("legs", ""))
-    tibia_fibula = femur = None
+    tibia_fibula = femur = 0
     for sentence in legs_sentences:
         if "tibia" in sentence.lower() or "fibula" in sentence.lower():
             tibia_fibula = get_fracture_count(sentence)

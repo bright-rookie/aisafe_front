@@ -15,6 +15,8 @@ import pyaudio
 import wave
 import threading
 
+import xgboo
+
 
 # Title
 st.title("AI-SAFE: 아동학대 선별 시스템")
@@ -396,7 +398,7 @@ response_vector = [
     map_response(treatment_delayed),
     map_response(consistent_history),
     map_response(poor_condition),
-    map_response(inappropriate_relationship),
+    map_response(inappropriate_relationship)
 ]
 
 # Section 4: Load EMR data
@@ -556,7 +558,7 @@ with col1:
                 patient_age,
                 patient_sex,
                 height_percentile,
-                weight_percentile,
+                weight_percentile
             ]
 
 
@@ -831,26 +833,15 @@ if st.button("AI 실행"):
                 time.sleep(0.05)  # AI 분석 작업 시뮬레이션
                 progress.progress(i + 1)
         st.subheader("AI 학대 의심률")
-        abuse_risk_score = 63  # Replace this with real AI output
-        abuse_cause = [
-            "멍",
-            43,
-            "진술",
-            13,
-            "검사결과",
-            5,
-            "동영상",
-            2,
-        ]  # Replace this with real AI output
+        results = xgboo.model(info_vector, bruise_vector, response_vector, lab_vector, xray_vector, video_vector)
+        abuse_risk_score = response[0] * 100 
         st.write(f"아동학대 의심률은 {abuse_risk_score}%입니다")
-        st.write(
-            f"가장 가능성이 높은 근거는 {abuse_cause[0]}(으)로 {abuse_cause[1]}% 관여합니다."
-        )
-        st.write(f"두번째 근거는 {abuse_cause[2]}(으)로 {abuse_cause[3]}% 관여합니다.")
-        st.write(f"세번째 근거는 {abuse_cause[4]}(으)로 {abuse_cause[5]}% 관여합니다.")
+
+        abuse_cause = response[1]
+
+        for idx, (cause, percent) in enumerate(islice(abuse_cause, 3), start = 1):
+            rank = ["가장 가능성이 높은", "두번째", "세번째"][idx - 1] if idx <= 3 else f"{idx}번째"
+            st.write(f"{rank} 근거는 {cause}(으)로 {percent*100}% 관여합니다.")
+
     else:
         st.error("EMR 업로드 확인을 먼저 수행해주십시오.")
-
-st.write(bruise_vector, response_vector, info_vector, lab_vector, xray_vector)
-# 'Run AI Detection' 버튼 눌렀을 때 '판독문 업로드 완료'등 진행 상황 문구 출력
-# 결과를 내게 만든 특성별 gradient순으로 나열, 판단의 근거 제시
