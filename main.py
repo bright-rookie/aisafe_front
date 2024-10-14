@@ -3,6 +3,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 from components.video_back import video_back
 from components.ai_model1 import run_ai_analysis
+# from components.ai_model import run_ai_analysis
+
 from components.bruise_components import (
     analyze_bruise_info,
     display_bruise_info,
@@ -18,7 +20,6 @@ import tempfile
 import time
 from itertools import islice
 
-import matplotlib.pyplot as plt
 import plotly.express as px
 
 
@@ -160,7 +161,9 @@ if xray_report:
 
 if st.button("X-ray 없음"):
     xray_vector = generate_xray_vector("")
+    xray_vector = generate_xray_vector(xray_report)
     st.session_state.xray_uploaded = True
+
 
 # Section 5: Check Data Uploads
 if st.button("EMR 데이터 업로드 확인"):
