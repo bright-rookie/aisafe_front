@@ -130,7 +130,7 @@ def generate_xray_vector(text):
     spiral_fx = check_specific_fracture(arms_legs_text, "spiral")
     metaphyseal_fx = check_specific_fracture(arms_legs_text, "metaphyseal")
 
-    return [
+    xray_vector = [
         skull,
         ribs,
         humerus,
@@ -141,3 +141,5 @@ def generate_xray_vector(text):
         spiral_fx,
         metaphyseal_fx,
     ]
+
+    return xray_vector
