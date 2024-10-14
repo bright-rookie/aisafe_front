@@ -18,6 +18,10 @@ import tempfile
 import time
 from itertools import islice
 
+import matplotlib.pyplot as plt
+import plotly.express as px
+
+
 # Header
 st.title("AI-SAFE: 아동학대 선별 시스템")
 st.subheader("Patient Information")
@@ -178,11 +182,24 @@ if st.button("AI 실행"):
         abuse_risk_score, abuse_cause = run_ai_analysis(info_vector, bruise_vector, response_vector, lab_vector, xray_vector, video_vector)
         st.subheader("AI 학대 의심률")
         st.write(f"아동학대 의심률은 {abuse_risk_score*100}%입니다")
-        for idx, (cause, percent) in enumerate(islice(abuse_cause, 3), start = 1):
+        categories = []
+        values = []
+        for idx, (cause, percent) in enumerate(islice(abuse_cause, 5), start = 1):
             rank = ["가장 가능성이 높은", "두번째", "세번째"][idx - 1] if idx <= 3 else f"{idx}번째"
             st.write(f"{rank} 근거는 {cause}(으)로 {percent*100}% 관여합니다.")
+            categories.append(cause)
+            values.append(percent*100)
+
+# 바 그래프 생성
+        fig = px.bar(x=values[::-1], y=categories[::-1], title="의심률 관여 비중", labels={'x': '퍼센트', 'y': '항목'}, orientation='h', text= values)
+
+# Streamlit에서 출력
+        st.plotly_chart(fig)
+
+
     else:
         st.error("EMR 업로드 확인을 먼저 수행해주십시오.")
+
 
 # Add a sidebar for the table of contents and data preview
 sidebar(bruise_vector, info_vector, patient_number)
