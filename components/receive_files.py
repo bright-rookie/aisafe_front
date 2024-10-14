@@ -5,7 +5,7 @@ from components.utils import parse_data
 
 
 def receive_basics(patient_number):
-    st.markdown("환자 기본 정보")
+    st.markdown("**환자 기본 정보**")
     basic_info_file = st.file_uploader("기본 정보를 업로드하세요 (CSV)", type=["csv"])
     if basic_info_file is not None:
             try:
