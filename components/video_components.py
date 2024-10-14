@@ -78,11 +78,19 @@ def record_video() :
     # Combine audio and video using moviepy
     video = mp.VideoFileClip(temp_video_file.name)
     audio = mp.AudioFileClip(temp_audio_file.name)
+
+    # 영상만 저장 (소리 제거된 상태)
+    video.write_videofile("output_video.mp4")
+    # 소리만 저장
+    audio.write_audiofile("output_audio.mp3")
+
+
     # final_video = video.set_audio(audio)
     # recorded_file_path = temp_video_file.name.replace('.mp4', '_final.mp4')
     # final_video.write_videofile(recorded_file_path, codec='libx264', audio_codec='aac', fps=fps)
 
-    return video.name, audio.name
+    return "output_video.mp4", "output_video.mp3"
+
 
 
 """    st.video(recorded_file_path)
@@ -108,4 +116,19 @@ def video_dissembly(uploaded_video) :
     audio_only = video.audio
     video_only = video.without_audio()
 
-    return audio_only.name, video_only.name
+    # 영상만 저장 (소리 제거된 상태)
+    video_only.write_videofile("output_video.mp4")
+    # 소리만 저장
+    audio_only.write_audiofile("output_audio.mp3")
+
+    return "output_video.mp4", "output_audio.mp3"
+
+# Button 3: Upload Audio File
+def audio_save(uploaded_audio) :
+    temp_audio_file =  tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+    temp_audio_file.write(uploaded_audio.read())
+    temp_audio_file.close()
+
+    os.rename(temp_audio_file.name, "output_audio.mp3")
+
+    return None, "output_audio.mp3"
