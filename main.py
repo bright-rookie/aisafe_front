@@ -36,25 +36,23 @@ info_uploaded = False
 lab_uploaded = False
 
 if "info_vector" not in st.session_state :
-    st.session_state.info_vector = False
+    st.session_state.info_vector = None
 if "lab_vector" not in st.session_state :
-    st.session_state.lab_vector = False
+    st.session_state.lab_vector = None
 if "xray_vector" not in st.session_state :
-    st.session_state.xray_vector = False
+    st.session_state.xray_vector = None
 if "xray_uploaded" not in st.session_state :
     st.session_state.xray_uploaded = False
-if "emr_uploaded" not in st.session_state:
-    st.session_state.emr_uploaded = False
 if 'button_clicked' not in st.session_state:
     st.session_state.button_clicked = False
 
 st.subheader("EMR 업로드")
 st.write("입력하신 환자에 대한 EMR 정보를 업로드하시겠습니까?")
-col1, col2 = st.columns(2)
 
 if st.button("EMR 업로드") :
     st.session_state.button_clicked = True
 
+col1, col2 = st.columns(2)
 
 if st.session_state.button_clicked and (patient_number is not None):
     st.session_state.button_clicked = True
@@ -206,5 +204,3 @@ if st.button("AI 실행"):
 
 # Add a sidebar for the table of contents and data preview
 sidebar(bruise_vector, st.session_state.info_vector, patient_number)
-
-st.write(st.session_state.info_vector, st.session_state.xray_vector, st.session_state.lab_vector, bruise_vector, response_vector)
