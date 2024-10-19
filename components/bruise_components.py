@@ -25,7 +25,7 @@ def get_bruise_data() -> tuple[dict, list[str]]:
     st.session_state.selected_body_parts = selected_body_parts
 
     st.markdown(
-        "> 멍의 개수가 10개 이상인 경우 10을 기입해주세요.  \n > 멍 중 길이가 가장 긴 장반경을 기입해주세요."
+        "> 멍의 개수가 10개 이상인 경우 10을 기입해주세요.  \n > 멍 중 길이가 가장 긴 길이을 기입해주세요."
     )
 
     bruise_data = {}

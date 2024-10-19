@@ -834,7 +834,7 @@ if st.button("AI 실행"):
                 progress.progress(i + 1)
         st.subheader("AI 학대 의심률")
         results = xgboo.model(info_vector, bruise_vector, response_vector, lab_vector, xray_vector, video_vector)
-        abuse_risk_score = response[0] * 100 
+        abuse_risk_score = response[0] * 100
         st.write(f"아동학대 의심률은 {abuse_risk_score}%입니다")
 
         abuse_cause = response[1]

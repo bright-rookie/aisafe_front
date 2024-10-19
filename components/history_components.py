@@ -33,19 +33,21 @@ def get_history():
         ["예", "아니오", "유보"],
     ]
     col1, col2 = st.columns(2)
-    left_answers = right_answers = []
-    for i in range(5):
-        is_guardian = int(not (i == 2))
-        with col1:
-            left_answers.append(
-                st.text_input(questions[i])
-                if i == 0
-                else st.radio(questions[i], options[is_guardian])
-            )
-        with col2:
-            right_answers.append(st.radio(questions[i + 5], options[1]))
+    responses = []
+    with col1 :
+        for i in range(5) :
+            if i == 0 :
+                claim = st.text_input(questions[0])
+            elif i == 1 :
+                responses.append(st.radio(questions[1], options[0]))
+            else :
+                responses.append(st.radio(questions[i], options[1]))
+
+    with col2 :
+        for i in range(5, 10) :
+            responses.append(st.radio(questions[i], options[1]))
 
     # Create response vector
-    response_vector = [map_response(x) for x in left_answers + right_answers]
+    response_vector = [map_response(x) for x in responses]
 
     return response_vector

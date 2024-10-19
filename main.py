@@ -30,6 +30,57 @@ patient_number = st.number_input(
     "환자 번호를 입력해주세요:", value=1, min_value=1, step=1
 )
 
+
+# Section 4: Load EMR data
+info_uploaded = False
+lab_uploaded = False
+
+if "info_vector" not in st.session_state :
+    st.session_state.info_vector = False
+if "lab_vector" not in st.session_state :
+    st.session_state.lab_vector = False
+if "xray_vector" not in st.session_state :
+    st.session_state.xray_vector = False
+if "xray_uploaded" not in st.session_state :
+    st.session_state.xray_uploaded = False
+if "emr_uploaded" not in st.session_state:
+    st.session_state.emr_uploaded = False
+if 'button_clicked' not in st.session_state:
+    st.session_state.button_clicked = False
+
+st.subheader("EMR 업로드")
+st.write("입력하신 환자에 대한 EMR 정보를 업로드하시겠습니까?")
+col1, col2 = st.columns(2)
+
+if st.button("EMR 업로드") :
+    st.session_state.button_clicked = True
+
+
+if st.session_state.button_clicked and (patient_number is not None):
+    st.session_state.button_clicked = True
+    with col1:
+        st.session_state.info_vector = receive_basics(patient_number)
+    with col2:
+        st.session_state.lab_vector = receive_labs(patient_number)
+
+
+
+st.write("X-ray 정보를 업로드하시겠습니까?")
+if st.button("X-ray 업로드") and (patient_number is not None):
+    xray_test = receive_xrays('./xray', str(patient_number))
+    xray_report = process_xray_text(xray_test, patient_number)
+
+    if xray_report:
+        st.success("X-ray 데이터가 성공적으로 업로드되었습니다.")
+        st.text_area("합쳐진 X-ray 판독문:", value=xray_report, height=250)
+        st.session_state.xray_vector = generate_xray_vector(xray_report)
+
+if st.button("X-ray 없음"):
+    st.session_state.xray_vector = generate_xray_vector("")
+
+
+
+
 # Section 1: Bruise Information
 input_col, image_col = st.columns([2, 1])
 
@@ -121,88 +172,39 @@ else:
     st.warning("녹화를 진행하거나 파일을 업로드해주세요.")
 
 
-
 # Section 3: History Questions
 st.subheader("3. 문진 정보")
 response_vector = get_history()
 
-# Section 4: Load EMR data
-info_vector = lab_vector = xray_vector = None
-info_uploaded = False
-lab_uploaded = False
-if "xray_uploaded" not in st.session_state :
-    st.session_state.xray_uploaded = False
-if "emr_uploaded" not in st.session_state:
-    st.session_state.emr_uploaded = False
 
-st.subheader("4. EMR 데이터 불러오기")
-col1, col2 = st.columns(2)
-
-with col1:
-    info_vector = receive_basics(patient_number)
-    if info_vector is not None :
-        info_uploaded = True
-
-with col2:
-    lab_vector = receive_labs(patient_number)
-    if lab_vector is not None :
-        lab_uploaded = True
-
-# Section 5: Load X-ray Data
-xray_test = receive_xrays()
-xray_report = process_xray_text(xray_test, patient_number)
-
-if xray_report:
-    st.success("X-ray 데이터가 성공적으로 업로드되었습니다.")
-    st.text_area("합쳐진 X-ray 판독문:", value=xray_report, height=250)
-    xray_vector = generate_xray_vector(xray_report)
-    if xray_vector is not None:
-        st.session_state.xray_uploaded = True
-
-if st.button("X-ray 없음"):
-    xray_vector = generate_xray_vector("")
-    xray_vector = generate_xray_vector(xray_report)
-    st.session_state.xray_uploaded = True
-
-
-# Section 5: Check Data Uploads
-if st.button("EMR 데이터 업로드 확인"):
-    if info_uploaded and lab_uploaded and st.session_state.xray_uploaded is True:
-        st.session_state.emr_uploaded = True
-        st.success("EMR 데이터가 성공적으로 업로드되었습니다.")
-    else:
-        st.error("모든 필드를 올바르게 업로드해주세요.")
 
 # Section 6: Run AI Analysis
 if st.button("AI 실행"):
-    if st.session_state.emr_uploaded:
-        with st.spinner('AI 분석 중입니다...'):
-            progress = st.progress(0)
-            for i in range(100):
-                time.sleep(0.05)  # AI 분석 작업 시뮬레이션
-                progress.progress(i + 1)
-        video_vector = video_back(st.session_state.video_address, st.session_state.audio_address)
-        abuse_risk_score, abuse_cause = run_ai_analysis(info_vector, bruise_vector, response_vector, lab_vector, xray_vector, video_vector)
-        st.subheader("AI 학대 의심률")
-        st.write(f"아동학대 의심률은 {abuse_risk_score*100}%입니다")
-        categories = []
-        values = []
-        for idx, (cause, percent) in enumerate(islice(abuse_cause, 5), start = 1):
-            rank = ["가장 가능성이 높은", "두번째", "세번째"][idx - 1] if idx <= 3 else f"{idx}번째"
-            st.write(f"{rank} 근거는 {cause}(으)로 {percent*100}% 관여합니다.")
-            categories.append(cause)
-            values.append(percent*100)
+    with st.spinner('AI 분석 중입니다...'):
+        progress = st.progress(0)
+        for i in range(100):
+            time.sleep(0.05)  # AI 분석 작업 시뮬레이션
+            progress.progress(i + 1)
+    video_vector = video_back(st.session_state.video_address, st.session_state.audio_address)
+    abuse_risk_score, abuse_cause = run_ai_analysis(st.session_state.info_vector, bruise_vector, response_vector, st.session_state.lab_vector, st.session_state.xray_vector, video_vector)
+    st.subheader("AI 학대 의심률")
+    st.write(f"아동학대 의심률은 {abuse_risk_score*100}%입니다")
+    categories = []
+    values = []
+    for idx, (cause, percent) in enumerate(islice(abuse_cause, 5), start = 1):
+        rank = ["가장 가능성이 높은", "두번째", "세번째"][idx - 1] if idx <= 3 else f"{idx}번째"
+        st.write(f"{rank} 근거는 {cause}(으)로 {percent*100}% 관여합니다.")
+        categories.append(cause)
+        values.append(percent*100)
 
 # 바 그래프 생성
-        fig = px.bar(x=values[::-1], y=categories[::-1], title="의심률 관여 비중", labels={'x': '퍼센트', 'y': '항목'}, orientation='h', text= values)
+    fig = px.bar(x=values[::-1], y=categories[::-1], title="의심률 관여 비중", labels={'x': '퍼센트', 'y': '항목'}, orientation='h', text= values)
 
 # Streamlit에서 출력
-        st.plotly_chart(fig)
-
-
-    else:
-        st.error("EMR 업로드 확인을 먼저 수행해주십시오.")
+    st.plotly_chart(fig)
 
 
 # Add a sidebar for the table of contents and data preview
-sidebar(bruise_vector, info_vector, patient_number)
+sidebar(bruise_vector, st.session_state.info_vector, patient_number)
+
+st.write(st.session_state.info_vector, st.session_state.xray_vector, st.session_state.lab_vector, bruise_vector, response_vector)
