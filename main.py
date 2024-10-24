@@ -2,8 +2,8 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 
 from components.video_back import video_back
-from components.ai_model1 import run_ai_analysis
-# from components.ai_model import run_ai_analysis
+# from components.ai_model1 import run_ai_analysis
+from components.ai_model import run_ai_analysis
 
 from components.bruise_components import (
     analyze_bruise_info,
