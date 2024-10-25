@@ -1,9 +1,9 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 
-from components.video_back import video_back
-# from components.ai_model1 import run_ai_analysis
-from components.ai_model import run_ai_analysis
+# from components.video_back import video_back
+from components.ai_model1 import run_ai_analysis
+# from components.ai_model import run_ai_analysis
 
 from components.bruise_components import (
     analyze_bruise_info,
@@ -46,7 +46,7 @@ if "xray_uploaded" not in st.session_state :
 if 'button_clicked' not in st.session_state:
     st.session_state.button_clicked = False
 
-st.subheader("EMR 업로드")
+st.subheader("1. EMR 업로드")
 st.write("입력하신 환자에 대한 EMR 정보를 업로드하시겠습니까?")
 
 if st.button("EMR 업로드") :
@@ -79,11 +79,11 @@ if st.button("X-ray 없음"):
 
 
 
-# Section 1: Bruise Information
+# Section 2: Bruise Information
 input_col, image_col = st.columns([2, 1])
 
 with input_col:
-    st.subheader("1. 멍 정보")
+    st.subheader("2. 멍 정보")
     bruise_data, selected_body_parts = get_bruise_data()
 
 with image_col:
@@ -113,8 +113,8 @@ with image_col:
 
 bruise_vector = analyze_bruise_info(selected_body_parts, bruise_data)
 
-# Section 2: Video Recording
-st.subheader("2. 진료 영상")
+# Section 3: Video Recording
+st.subheader("3. 진료 영상")
 
 if "video_recorded" not in st.session_state:
     st.session_state.video_recorded = False
@@ -170,8 +170,8 @@ else:
     st.warning("녹화를 진행하거나 파일을 업로드해주세요.")
 
 
-# Section 3: History Questions
-st.subheader("3. 문진 정보")
+# Section 4: History Questions
+st.subheader("4. 문진 정보")
 response_vector = get_history()
 
 
