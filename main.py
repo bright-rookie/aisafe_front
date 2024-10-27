@@ -14,6 +14,7 @@ from components.history_components import get_history
 from components.parse_xray import generate_xray_vector, process_xray_text
 from components.receive_files import receive_basics, receive_labs, receive_xrays
 from components.sidebar import sidebar
+from components.video_back import video_back
 from components.video_components import record_video, video_dissembly, audio_save
 
 import tempfile
@@ -176,7 +177,7 @@ response_vector = get_history()
 
 
 
-# Section 6: Run AI Analysis
+# Section 5: Run AI Analysis
 if st.button("AI 실행"):
     with st.spinner('AI 분석 중입니다...'):
         progress = st.progress(0)
