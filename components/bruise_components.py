@@ -43,7 +43,7 @@ def get_bruise_data() -> tuple[dict, list[str]]:
         with cols[1]:
             bruise_data[f"{part}_length"] = round(  # type: ignore
                 st.number_input(
-                    f"{part}: 멍의 장반경(cm)",
+                    f"{part}: 멍의 장경(cm)",
                     min_value=0.0,
                     max_value=50.0,
                     value=0.0,
@@ -65,7 +65,7 @@ def display_bruise_info(
         length = bruise_data.get(f"{part}_length", 0.0)
 
         if count > 0 or length > 0:
-            text = f"{part}\n개수: {count}\n장반경: {length}cm"
+            text = f"{part}\n개수: {count}\n장경: {length}cm"
             position = body_part_coords.get(part, (0, 0))
             bbox = draw.textbbox(position, text, font=font)
 
