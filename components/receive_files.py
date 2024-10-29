@@ -11,13 +11,13 @@ from aisafe_xgboost.utils import ParseGrowth
 def receive_basics(patient_number):
     st.markdown("**환자 기본 정보**")
     basic_info_df = pd.read_csv('./example_files/info.csv')
-    required_columns = [
+    required_columns = {
         "patient_number",
         "age_months",
         "sex",
         "height_cm",
         "weight_kg",
-    ]
+    }
     info_vector_pre = parse_data(basic_info_df, patient_number, required_columns, "기본")
     parser = ParseGrowth(*info_vector_pre)
     info_vector = parser.get_percentiles()
@@ -26,7 +26,7 @@ def receive_basics(patient_number):
 def receive_labs(patient_number):
     st.markdown("**Lab 데이터**")
     lab_data_df = pd.read_csv('./example_files/lab.csv')
-    required_columns = [
+    required_columns = {
         "patient_number",
         "CBC_RBC",
         "CBC_WBC",
@@ -47,7 +47,7 @@ def receive_labs(patient_number):
         "Pre_albumin",
         "Transferrin",
         "Glucose",
-    ]
+    }
     return parse_data(lab_data_df, patient_number, required_columns, "Lab")
 
 

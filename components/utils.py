@@ -2,14 +2,8 @@ import pandas as pd  # type:ignore
 import streamlit as st
 
 
-def parse_data(data_file, patient_number, required_columns, data_type: str = "Basic",):
+def parse_data(data_df, patient_number, required_columns, data_type):
     """Parse basic information from CSV file."""
-
-    if not data_file:
-        return None
-
-    data_df = pd.read_csv(data_file)
-
     if not required_columns.issubset(data_df.columns):
         missing_columns = list(required_columns - set(data_df.columns))
         st.error(f"CSV 파일에서 정보를 확인하기 위해 필요한 열이 없습니다. 다음 열을 추가해주세요: {', '.join(missing_columns)}"

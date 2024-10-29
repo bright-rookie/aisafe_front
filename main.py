@@ -183,6 +183,7 @@ if st.button("AI 실행"):
         st.session_state.xray_vector,
         st.session_state.video_vector
     )
+    st.write(f">>>LOG: Abuse cause is {abuse_cause}")
     st.subheader("AI 학대 의심률")
     st.write(f"아동학대 의심률은 {abuse_risk_score*100}%입니다")
     categories = []
