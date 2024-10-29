@@ -1,11 +1,23 @@
 import re
+import os
 
 import nltk  # type:ignore
 import streamlit as st
 from nltk.tokenize import sent_tokenize  # type:ignore
 
-nltk.download("punkt", quiet=True)
+nltk.download('punkt', quiet=True)
 
+
+# NLTK 데이터 경로 추가
+nltk_data_path = '/home/catbase/nltk_data'
+nltk.data.path.append(nltk_data_path)
+
+# punkt 리소스가 존재하는지 확인
+try:
+    nltk.data.find('tokenizers/punkt')
+    print("punkt 리소스를 찾았습니다!")
+except LookupError:
+    print("punkt 리소스를 찾을 수 없습니다.")
 
 def process_xray_text(files, input_patient_number):
     """Process uploaded X-ray text files."""
