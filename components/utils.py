@@ -2,7 +2,7 @@ import pandas as pd  # type:ignore
 import streamlit as st
 
 
-def parse_data(data_file, patient_number, required_columns):
+def parse_data(data_file, patient_number, required_columns, data_type: str = "Basic",):
     """Parse basic information from CSV file."""
 
     if not data_file:
@@ -19,10 +19,10 @@ def parse_data(data_file, patient_number, required_columns):
     filtered_info = data_df[data_df["patient_number"] == patient_number]
 
     if filtered_info.empty:
-        st.error(f"CSV 파일에 환자 번호 {patient_number}에 대한 기본 정보 정보를 찾을 수 없습니다.")
+        st.error(f"CSV 파일에 환자 번호 {patient_number}에 대한 {data_type} 정보 정보를 찾을 수 없습니다.")
         return None
 
-    st.success("기본 정보가 성공적으로 업로드되었습니다.")
+    st.success(f"{data_type} 정보가 성공적으로 업로드되었습니다.")
     data_vector = filtered_info.drop(
         columns = ["patient_number"]
     ).values.flatten().tolist()

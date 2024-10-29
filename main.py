@@ -1,10 +1,7 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 
-from components.video_back import video_back
-from components.ai_model1 import run_ai_analysis
-# from components.ai_model import run_ai_analysis
-
+from components.ai_model import run_ai_analysis
 from components.bruise_components import (
     analyze_bruise_info,
     display_bruise_info,
@@ -14,25 +11,15 @@ from components.history_components import get_history
 from components.parse_xray import generate_xray_vector, process_xray_text
 from components.receive_files import receive_basics, receive_labs, receive_xrays
 from components.sidebar import sidebar
-from components.video_back import video_back
 from components.video_components import record_video, video_dissembly, audio_save
 
-import tempfile
 import time
 from itertools import islice
 
 import plotly.express as px
+from aisafe_xgboost import video_back
 
-
-# Header
-st.title("AI-SAFE: 아동학대 선별 시스템")
-st.subheader("Patient Information")
-patient_number = st.number_input(
-    "환자 번호를 입력해주세요:", value=1, min_value=1, step=1
-)
-
-
-# Section 4: Load EMR data
+# Defaults
 info_uploaded = False
 lab_uploaded = False
 
@@ -47,6 +34,14 @@ if "xray_uploaded" not in st.session_state :
 if 'button_clicked' not in st.session_state:
     st.session_state.button_clicked = False
 
+# Header
+st.title("AI-SAFE: 아동학대 선별 시스템")
+st.subheader("Patient Information")
+patient_number = st.number_input(
+    "환자 번호를 입력해주세요:", value=1, min_value=1, step=1
+)
+
+# Section 1: EMR Information
 st.subheader("1. EMR 업로드")
 st.write("입력하신 환자에 대한 EMR 정보를 업로드하시겠습니까?")
 
@@ -63,10 +58,10 @@ if st.session_state.button_clicked and (patient_number is not None):
         st.session_state.lab_vector = receive_labs(patient_number)
 
 
-
+# Section 2: X-ray Information
 st.write("X-ray 정보를 업로드하시겠습니까?")
 if st.button("X-ray 업로드") and (patient_number is not None):
-    xray_test = receive_xrays('./xray', str(patient_number))
+    xray_test = receive_xrays('./example_files/xray', str(patient_number))
     xray_report = process_xray_text(xray_test, patient_number)
 
     if xray_report:
@@ -77,10 +72,7 @@ if st.button("X-ray 업로드") and (patient_number is not None):
 if st.button("X-ray 없음"):
     st.session_state.xray_vector = generate_xray_vector("")
 
-
-
-
-# Section 2: Bruise Information
+# Section 3: Bruise Information
 input_col, image_col = st.columns([2, 1])
 
 with input_col:
@@ -112,7 +104,7 @@ with image_col:
         font,
     )
 
-bruise_vector = analyze_bruise_info(selected_body_parts, bruise_data)
+st.session_state.bruise_vector = analyze_bruise_info(selected_body_parts, bruise_data)
 
 # Section 3: Video Recording
 st.subheader("3. 진료 영상")
@@ -173,9 +165,7 @@ else:
 
 # Section 4: History Questions
 st.subheader("4. 문진 정보")
-response_vector = get_history()
-
-
+st.session_state.response_vector = get_history()
 
 # Section 5: Run AI Analysis
 if st.button("AI 실행"):
@@ -184,8 +174,15 @@ if st.button("AI 실행"):
         for i in range(100):
             time.sleep(0.05)  # AI 분석 작업 시뮬레이션
             progress.progress(i + 1)
-    video_vector = video_back(st.session_state.video_address, st.session_state.audio_address)
-    abuse_risk_score, abuse_cause = run_ai_analysis(st.session_state.info_vector, bruise_vector, response_vector, st.session_state.lab_vector, st.session_state.xray_vector, video_vector)
+    st.session_state.video_vector = video_back(st.session_state.video_address, st.session_state.audio_address)
+    abuse_risk_score, abuse_cause = run_ai_analysis(
+        st.session_state.info_vector,
+        st.session_state.bruise_vector,
+        st.session_state.response_vector,
+        st.session_state.lab_vector,
+        st.session_state.xray_vector,
+        st.session_state.video_vector
+    )
     st.subheader("AI 학대 의심률")
     st.write(f"아동학대 의심률은 {abuse_risk_score*100}%입니다")
     categories = []
@@ -204,4 +201,4 @@ if st.button("AI 실행"):
 
 
 # Add a sidebar for the table of contents and data preview
-sidebar(bruise_vector, st.session_state.info_vector, patient_number)
+sidebar(st.session_state.bruise_vector, st.session_state.info_vector, patient_number)

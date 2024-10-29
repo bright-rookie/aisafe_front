@@ -1,11 +1,8 @@
 import time
-import streamlit as st
-
 import cv2
 import tempfile
 import os
 import moviepy.editor as mp
-import base64
 import pyaudio
 import wave
 import threading
@@ -90,19 +87,6 @@ def record_video() :
     # final_video.write_videofile(recorded_file_path, codec='libx264', audio_codec='aac', fps=fps)
 
     return "output_video.mp4", "output_video.mp3"
-
-
-
-"""    st.video(recorded_file_path)
-
-    with open(recorded_file_path, "rb") as file:
-        btn = st.download_button(
-            label="Download Recorded Video",
-            data=file,
-            file_name="recorded_video.mp4",
-            mime="video/mp4"
-        )
-"""
 
 # Button 2: Upload Video File
 def video_dissembly(uploaded_video) :
