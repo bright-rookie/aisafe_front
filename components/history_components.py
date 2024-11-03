@@ -38,8 +38,8 @@ def get_history():
         for i in range(5) :
             if i == 0 :
                 claim = st.text_input(questions[0])
-            elif i == 1 :
-                responses.append(st.radio(questions[1], options[0]))
+            elif i == 2 :
+                responses.append(st.radio(questions[2], options[0]))
             else :
                 responses.append(st.radio(questions[i], options[1]))
 
