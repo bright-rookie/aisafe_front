@@ -199,12 +199,6 @@ if st.button("AI 실행"):
     st.session_state.video_vector = video_back(
         st.session_state.video_address, st.session_state.audio_address
     )
-    st.write(st.session_state.info_vector)
-    st.write(st.session_state.bruise_vector)
-    st.write(st.session_state.response_vector)
-    st.write(st.session_state.lab_vector)
-    st.write(st.session_state.xray_vector)
-    st.write(st.session_state.video_vector)
     abuse_risk_score, abuse_cause = run_ai_analysis(
         st.session_state.info_vector,
         st.session_state.bruise_vector,
@@ -213,9 +207,8 @@ if st.button("AI 실행"):
         st.session_state.xray_vector,
         st.session_state.video_vector,
     )
-    st.write(f">>>LOG: Abuse cause is {abuse_cause}")
     st.subheader("AI 학대 의심률")
-    st.write(f"아동학대 의심률은 {abuse_risk_score*100}%입니다")
+    st.write(f"아동학대 의심률은 {abuse_risk_score*100:.2f}%입니다")
     categories = []
     values = []
     for idx, (cause, percent) in enumerate(islice(abuse_cause, 5), start=1):
@@ -224,9 +217,9 @@ if st.button("AI 실행"):
             if idx <= 3
             else f"{idx}번째"
         )
-        st.write(f"{rank} 근거는 {cause}(으)로 {percent*100}% 관여합니다.")
+        st.write(f"{rank} 근거는 {cause}(으)로 {percent * 100 : .2f}% 관여합니다.")
         categories.append(cause)
-        values.append(percent * 100)
+        values.append(f"{percent * 100 : .2f}")
 
     # 바 그래프 생성
     fig = px.bar(
@@ -235,12 +228,11 @@ if st.button("AI 실행"):
         title="의심률 관여 비중",
         labels={"x": "퍼센트", "y": "항목"},
         orientation="h",
-        text=values,
+        text=values[::-1],
     )
 
     # Streamlit에서 출력
     st.plotly_chart(fig)
-
 
 # Add a sidebar for the table of contents and data preview
 sidebar(
