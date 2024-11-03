@@ -65,9 +65,9 @@ if st.session_state.button_clicked1 and (patient_number is not None):
 # Section 2: X-ray Information
 st.write("X-ray 정보를 업로드하시겠습니까?")
 if st.button("X-ray 업로드") :
-    st.session_state.buttonclicked2 = True
+    st.session_state.button_clicked2 = True
 
-if st.session_state.buttonclicked2 and (patient_number is not None) :
+if st.session_state.button_clicked2 and (patient_number is not None) :
     xray_test = receive_xrays('./example_files/xray', str(patient_number))
     xray_report = process_xray_text(xray_test, patient_number)
 
