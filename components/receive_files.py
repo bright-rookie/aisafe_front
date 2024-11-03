@@ -1,16 +1,17 @@
-import streamlit as st
-import pandas as pd
+import io
 import os
 import re
-import io
+
+import pandas as pd
+import streamlit as st
+from aisafe_xgboost.utils import ParseGrowth
 
 from components.utils import parse_data
-from aisafe_xgboost.utils import ParseGrowth
 
 
 def receive_basics(patient_number):
     st.markdown("**환자 기본 정보**")
-    basic_info_df = pd.read_csv('./example_files/info.csv')
+    basic_info_df = pd.read_csv("./example_files/info.csv")
     required_columns = {
         "patient_number",
         "age_months",
@@ -18,14 +19,17 @@ def receive_basics(patient_number):
         "height_cm",
         "weight_kg",
     }
-    info_vector_pre = parse_data(basic_info_df, patient_number, required_columns, "기본")
+    info_vector_pre = parse_data(
+        basic_info_df, patient_number, required_columns, "기본"
+    )
     parser = ParseGrowth(*info_vector_pre)
     info_vector = parser.get_percentiles()
-    return info_vector
+    return info_vector, info_vector_pre
+
 
 def receive_labs(patient_number):
     st.markdown("**Lab 데이터**")
-    lab_data_df = pd.read_csv('./example_files/lab.csv')
+    lab_data_df = pd.read_csv("./example_files/lab.csv")
     required_columns = {
         "patient_number",
         "CBC_RBC",
@@ -53,13 +57,13 @@ def receive_labs(patient_number):
 
 def receive_xrays(file_path, patient_number):
     files = os.listdir(file_path)
-    pattern = rf'^{patient_number}_.+\.txt$'
+    pattern = rf"^{patient_number}_.+\.txt$"
     matching_files = [f for f in files if re.match(pattern, f)]
 
     uploaded_files = []
     for file_name in matching_files:
         file_path_full = os.path.join(file_path, file_name)
-        with open(file_path_full, 'rb') as file:  # 바이너리 모드로 읽음
+        with open(file_path_full, "rb") as file:  # 바이너리 모드로 읽음
             file_content = file.read()  # 파일 내용을 읽음
 
             # 파일을 임시 메모리에 저장하기 위해 io.BytesIO 사용 (바이너리 파일 지원)
