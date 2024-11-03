@@ -213,9 +213,8 @@ if st.button("AI 실행"):
     values = []
     for idx, (cause, percent) in enumerate(islice(abuse_cause, 5), start=1):
         rank = (
-            ["가장 가능성이 높은", "두번째", "세번째"][idx - 1]
-            if idx <= 3
-            else f"{idx}번째"
+            ["가장 가능성이 높은", "두번째", "세번째", "네번째", "다섯번째"][idx - 1]
+
         )
         st.write(f"{rank} 근거는 {cause}(으)로 {percent * 100 : .2f}% 관여합니다.")
         categories.append(cause)
