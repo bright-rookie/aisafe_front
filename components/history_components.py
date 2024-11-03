@@ -6,7 +6,7 @@ def map_response(response):
     return {
         "예": 0,
         "아니오": 1,
-        "유보": None,
+        "유보": -1,
         "부모": 0,
         "한부모": 1,
         "부모 외 타인": 2,
@@ -34,20 +34,20 @@ def get_history():
     ]
     col1, col2 = st.columns(2)
     responses = []
-    with col1 :
-        for i in range(5) :
-            if i == 0 :
-                claim = st.text_input(questions[0])
-            elif i == 2 :
+    with col1:
+        for i in range(5):
+            if i == 0:
+                _ = st.text_input(questions[0])
+            elif i == 2:
                 responses.append(st.radio(questions[2], options[0]))
-            else :
+            else:
                 responses.append(st.radio(questions[i], options[1]))
 
-    with col2 :
-        for i in range(5, 10) :
+    with col2:
+        for i in range(5, 10):
             responses.append(st.radio(questions[i], options[1]))
 
     # Create response vector
-    response_vector = [map_response(x) for x in responses]
+    response_vector = list(map(map_response, responses))
 
     return response_vector
